@@ -1,0 +1,137 @@
+<win:FAAppWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="using:FluentAvalonia.UI.Controls"
+                 xmlns:win="using:FluentAvalonia.UI.Windowing"
+                 xmlns:local="using:IcoConverter"
+                 x:Class="IcoConverter.MainWindow"
+                 Title="ICO Konverter"
+                 Icon="/Assets/logo.png"
+                 Width="760" Height="620"
+                 MinWidth="580" MinHeight="480"
+                 WindowStartupLocation="CenterScreen">
+    <win:FAAppWindow.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+        <Style Selector="Border.card.dragover">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="TextBlock.secondary">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="Button.remove">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8"/>
+        </Style>
+    </win:FAAppWindow.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="12" Margin="24,12,24,20">
+
+        <!-- Fejléc: logó, cím, témaválasztó -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+            <Image Grid.Column="0" Source="/Assets/logo.png" Width="44" Height="44"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="ICO Konverter" FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock Classes="secondary" TextWrapping="Wrap"
+                           Text="PNG, JPG és JPEG képek átalakítása több felbontású .ico fájllá"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <ui:FASymbolIcon Symbol="DarkTheme" FontSize="18"/>
+                <ComboBox x:Name="ThemeBox" MinWidth="124" ToolTip.Tip="Téma" AutomationProperties.Name="Téma"
+                          SelectionChanged="OnThemeChanged">
+                    <ComboBoxItem Content="Rendszer"/>
+                    <ComboBoxItem Content="Világos"/>
+                    <ComboBoxItem Content="Sötét"/>
+                </ComboBox>
+            </StackPanel>
+        </Grid>
+
+        <!-- Kép lista / drop zóna -->
+        <Border x:Name="DropZone" Grid.Row="1" Classes="card" DragDrop.AllowDrop="True">
+            <Grid>
+                <StackPanel x:Name="EmptyHint" Spacing="6" IsHitTestVisible="False"
+                            VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <ui:FASymbolIcon Symbol="Image" FontSize="44" HorizontalAlignment="Center"
+                                     Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    <TextBlock Text="Húzd ide a képeket" FontSize="16" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                    <TextBlock Classes="secondary" HorizontalAlignment="Center"
+                               Text="vagy használd az Importálás gombot  ·  PNG, JPG, JPEG"/>
+                </StackPanel>
+                <ListBox x:Name="FileList" Background="Transparent" Margin="4"
+                         SelectionMode="Multiple" KeyDown="OnFileListKeyDown"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="local:ImageItem">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="0,4">
+                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6"
+                                        ClipToBounds="True"
+                                        Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                                    <Image Source="{Binding Thumbnail}" Stretch="Uniform"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Classes="secondary" Text="{Binding Folder}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="remove" VerticalAlignment="Center"
+                                        ToolTip.Tip="Eltávolítás a listából" AutomationProperties.Name="Eltávolítás a listából"
+                                        Click="OnRemoveItem">
+                                    <ui:FASymbolIcon Symbol="Dismiss" FontSize="14"/>
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Kimeneti mappa -->
+        <Border Grid.Row="2" Classes="card" Padding="16,12">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <CheckBox x:Name="SameFolderCheck" Grid.Column="0" Content="Mentés a képek mellé"
+                          IsChecked="True" VerticalAlignment="Center"/>
+                <TextBox x:Name="OutputFolderBox" Grid.Column="1" IsReadOnly="True" IsEnabled="False"
+                         VerticalAlignment="Center"/>
+                <Button x:Name="BrowseButton" Grid.Column="2" IsEnabled="False" Click="OnBrowseFolder"
+                        AutomationProperties.Name="Kimeneti mappa kiválasztása">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ui:FASymbolIcon Symbol="OpenFolder" FontSize="16"/>
+                        <TextBlock Text="Mappa…"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Eredmény / figyelmeztetés -->
+        <ui:FAInfoBar x:Name="ResultBar" Grid.Row="3" IsOpen="False"/>
+
+        <!-- Gombsor -->
+        <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+            <Button x:Name="ImportButton" Grid.Column="0" Click="OnImport"
+                    AutomationProperties.Name="Importálás">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ui:FASymbolIcon Symbol="Add" FontSize="16"/>
+                    <TextBlock Text="Importálás…"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="ClearButton" Grid.Column="1" Click="OnClear"
+                    AutomationProperties.Name="Lista törlése">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ui:FASymbolIcon Symbol="Delete" FontSize="16"/>
+                    <TextBlock Text="Lista törlése"/>
+                </StackPanel>
+            </Button>
+            <TextBlock x:Name="StatusText" Grid.Column="2" Classes="secondary" FontSize="13"
+                       VerticalAlignment="Center" Margin="8,0" TextTrimming="CharacterEllipsis"/>
+            <Button x:Name="ConvertButton" Grid.Column="3" Classes="accent" Click="OnConvert"
+                    Content="Konvertálás .ico-ba" FontWeight="SemiBold" Padding="20,6"/>
+        </Grid>
+    </Grid>
+</win:FAAppWindow>
